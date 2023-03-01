@@ -1,4 +1,6 @@
+use crate::token::tokenize;
 use std::process::exit;
+mod token;
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
@@ -8,42 +10,21 @@ fn main() {
         exit(1)
     }
 
-    let p = &args[1];
+    let tokens = tokenize(&args[1]).expect("Unexpected error happend");
 
     println!(" .global main");
     println!("main:");
 
-    if let Some(first_op_index) = p.find(|x| x == '+' || x == '-') {
-        println!(" mov ${}, %rax", p[0..first_op_index].to_owned());
-        let res = p[first_op_index..].chars().collect::<Vec<_>>();
+    let mut tokens_iter = tokens.iter();
 
-        let mut index = 0usize;
-        while index < res.len() {
-            match res[index] {
-                '+' | '-' => {
-                    let num = res[index + 1..]
-                        .iter()
-                        .take_while(|&&c| c.is_ascii_digit())
-                        .collect::<String>();
+    println!(" mov ${}, %rax", tokens_iter.next().unwrap().val.unwrap());
 
-                    match res[index] {
-                        '+' => println!(" add ${num}, %rax"),
-                        '-' => println!(" sub ${num}, %rax"),
-                        _ => unreachable!(),
-                    }
-                    index += num.len() + 1;
-                }
-                '0'..='9' => {
-                    index += 1;
-                    continue;
-                }
-                _ => {
-                    panic!("unexpected character: {}", res[index])
-                }
-            }
+    while let Some(tok) = tokens_iter.next() {
+        if tok.is_plus() {
+            println!(" add ${}, %rax", tokens_iter.next().unwrap().val.unwrap());
+            continue;
         }
-    } else {
-        println!(" mov ${}, %rax", args[1]);
+        println!(" sub ${}, %rax", tokens_iter.next().unwrap().val.unwrap());
     }
 
     println!(" ret");

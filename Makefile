@@ -3,7 +3,7 @@ chibrust:
 	cargo build
 
 test: 
-	./test.sh
+	cargo build && ./test.sh
 
 clean:
 	cargo clean && rm -f *.o *~ tmp*
